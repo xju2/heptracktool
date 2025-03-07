@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import list, Union
+from typing import Union
 from pathlib import Path
 import pandas as pd
 from loguru import logger
@@ -23,9 +23,7 @@ class BaseTrackDataReader:
                 f"Input directory {self.inputdir} does not exist or is not a directory."
             )
 
-        self.outdir = (
-            Path(output_dir) if output_dir else self.inputdir / "processed_data"
-        )
+        self.outdir = Path(output_dir) if output_dir else self.inputdir / "processed_data"
         self.outdir.mkdir(parents=True, exist_ok=True)
 
         self.name = name

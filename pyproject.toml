@@ -55,8 +55,9 @@ quote-style = "double"
 line-length = 99
 target-version = "py39"
 exclude = ["*ipynb"]
+preview = true
 # NOTE: Synchoronize the ignores with .flake8
-ignore = [
+lint.ignore = [
     # these ignores are from flake8-bugbear; please fix!
     "B007", "B008", "B017",
     "B018", # Useless expression
@@ -91,11 +92,9 @@ ignore = [
     "SIM116", # Disable Use a dictionary instead of consecutive `if` statements
     "SIM117",
     "SIM118",
-    "UP007", # keep-runtime-typing
-    "TC003",
-    "TC002",
+    "UP007" # keep-runtime-typing
 ]
-select = [
+lint.select = [
     "B",
     "B904", # Re-raised error without specifying the cause via the from keyword
     "C4",
