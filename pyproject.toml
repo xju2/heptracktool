@@ -1,20 +1,26 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [project]
-name = "project"
+name = "heptracktool"
 version = "0.1.0"
-description = ""
+description = "Tools for high energy physics particle tracking"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 license = {file = "LICENSE"}
-keywords = [""]
+keywords = ["tracking", "HEP"]
 authors = [
   {name = "X. Ju", email = "xju@lbl.gov" }
 ]
 dependencies = [
-
+  "torch==2.6.0",
+  "torch_geometric>=2.6.1",
+  "scikit-learn==1.6.1",
+  "uproot",
+  "awkward",
+  "pandas",
+  "loguru",
 ]
 
 [project.optional-dependencies]
@@ -28,12 +34,13 @@ dev = [
 ]
 
 [project.urls]
-Homepage = ""
+Homepage = "https://github.com/xju2/heptracktool"
 
 [tool.pytest.ini_options]
 addopts = [
     "--import-mode=importlib",
-    "--cov=llm4tracking",
+    "--cov=heptracktool",
+    "--cov-report=term-missing",
     "--color=yes",
     "--doctest-modules",
     "--strict-markers",
