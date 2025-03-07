@@ -161,6 +161,7 @@ lint.select = [
     "TRY002", # ban vanilla raise (todo fix NOQAs)
     "TRY401", # verbose-log-message
     "UP",
+    "YTT",  # flak8-2020
 ]
 
 [tool.ruff.lint.per-file-ignores]
