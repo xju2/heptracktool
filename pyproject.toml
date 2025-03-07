@@ -47,17 +47,14 @@ addopts = [
     "--strict-markers",
 ]
 
-[tool.ruff]
-line-length = 99
-target-version = "py39"
-exclude = ["*ipynb"]
-preview = true
-
 [tool.ruff.format]
 docstring-code-format = true
 quote-style = "double"
 
-[tool.ruff.lint]
+[tool.ruff]
+line-length = 99
+target-version = "py39"
+exclude = ["*ipynb"]
 # NOTE: Synchoronize the ignores with .flake8
 ignore = [
     # these ignores are from flake8-bugbear; please fix!
@@ -160,7 +157,6 @@ select = [
     "RUF024", # from keys mutable
     "RUF026", # default factory kwarg
     "SLOT",
-    "TCH",
     "TRY002", # ban vanilla raise (todo fix NOQAs)
     "TRY401", # verbose-log-message
     "UP",
@@ -173,4 +169,3 @@ select = [
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
-
