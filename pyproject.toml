@@ -21,6 +21,7 @@ dependencies = [
   "awkward",
   "pandas",
   "loguru",
+  "matplotlib",
 ]
 
 [tool.poetry.group.dev]
