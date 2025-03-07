@@ -1,3 +1,4 @@
+from __future__ import annotations
 from pathlib import Path
 from typing import Union
 import pickle
@@ -26,7 +27,7 @@ def load_data(filename: Union[str, Path]):
         return pd.read_parquet(filename)
 
 
-def read_or_create(outname: Union[str, Path] = None, overwrite: bool = False):
+def read_or_create(outname: Union[str, Path] | None = None, overwrite: bool = False):
     """Decorator for reading or creating data"""
 
     def decorator(func):

@@ -8,6 +8,7 @@ trackml/event000001000-cells.csv
 trackml/event000001000-particles.csv
 trackml/event000001000-truth.csv
 """
+
 import os
 import glob
 import re
@@ -55,9 +56,9 @@ def select_barrel_hits(hits):
     n_det_layers = len(vlids)
     # Select barrel layers and assign convenient layer number [0-9]
     vlid_groups = hits.groupby(["volume_id", "layer_id"])
-    hits = pd.concat(
-        [vlid_groups.get_group(vlids[i]).assign(layer=i) for i in range(n_det_layers)]
-    )
+    hits = pd.concat([
+        vlid_groups.get_group(vlids[i]).assign(layer=i) for i in range(n_det_layers)
+    ])
     return hits
 
 
@@ -81,8 +82,8 @@ class TrackMLReader(BaseTrackDataReader):
             pattern = "event([0-9]*)-hits" + self.suffix
 
         self.all_evtids = sorted([
-            int(re.search(pattern, os.path.basename(x)).group(1).strip())
-            for x in all_evts])
+            int(re.search(pattern, os.path.basename(x)).group(1).strip()) for x in all_evts
+        ])
 
         print(f"total {self.nevts} events in directory: {self.inputdir}")
 
@@ -101,7 +102,9 @@ class TrackMLReader(BaseTrackDataReader):
         # * 5: masked measurement
         # * 6: padding
 
-        detector_umid = np.stack([detector.volume_id, detector.layer_id, detector.module_id], axis=1)
+        detector_umid = np.stack(
+            [detector.volume_id, detector.layer_id, detector.module_id], axis=1
+        )
         umid_dict = {}
         index = 1
         for i in detector_umid:
@@ -114,18 +117,18 @@ class TrackMLReader(BaseTrackDataReader):
         # Inverting the umid_dict
         self.umid_dict_inv = {v: k for k, v in umid_dict.items()}
 
-    def read(self, evtid: int = None) -> bool:
+    def read(self, evtid: int) -> bool:
         """Read one event from the input directory"""
 
         if (evtid is None or evtid < 1) and self.nevts > 0:
             evtid = self.all_evtids[0]
-            print("read event {}".format(evtid))
+            print(f"read event {evtid}")
 
-        prefix = os.path.join(self.inputdir, "event{:09d}".format(evtid))
-        hit_fname = "{}-hits{}".format(prefix, self.suffix)
-        cell_fname = "{}-cells{}".format(prefix, self.suffix)
-        particle_fname = "{}-particles{}".format(prefix, self.suffix)
-        truth_fname = "{}-truth{}".format(prefix, self.suffix)
+        prefix = os.path.join(self.inputdir, f"event{evtid:09d}")
+        hit_fname = f"{prefix}-hits{self.suffix}"
+        cell_fname = f"{prefix}-cells{self.suffix}"
+        particle_fname = f"{prefix}-particles{self.suffix}"
+        truth_fname = f"{prefix}-truth{self.suffix}"
 
         # read all files
         hits = pd.read_csv(hit_fname)
@@ -144,34 +147,35 @@ class TrackMLReader(BaseTrackDataReader):
         particles.loc[len(particles.index)] = 0
         self.particles = particles
 
-        truth = truth.merge(particles, on='particle_id', how='left')
+        truth = truth.merge(particles, on="particle_id", how="left")
         truth = truth.assign(pt=np.sqrt(truth.px**2 + truth.py**2))
         self.truth = truth
 
-        hits = hits.merge(truth[['hit_id', 'particle_id', 'vx', 'vy', 'vz', 'pt', 'weight', "nhits"]],
-                          on='hit_id')
+        hits = hits.merge(
+            truth[["hit_id", "particle_id", "vx", "vy", "vz", "pt", "weight", "nhits"]],
+            on="hit_id",
+        )
         is_pixel = (hits.volume_id == 7) | (hits.volume_id == 8) | (hits.volume_id == 9)
         hits = hits.assign(is_pixel=is_pixel)
 
         # add detector unique module ID
-        vlid_groups = hits.groupby(['volume_id', 'layer_id', 'module_id'])
-        hits = pd.concat([vlid_groups.get_group(vlid).assign(umid=self.umid_dict[vlid])
-                          for vlid in vlid_groups.groups.keys()])
+        vlid_groups = hits.groupby(["volume_id", "layer_id", "module_id"])
+        hits = pd.concat([
+            vlid_groups.get_group(vlid).assign(umid=self.umid_dict[vlid])
+            for vlid in vlid_groups.groups.keys()
+        ])
         # add detector unique layer ID
-        vlid_groups = hits.groupby(['volume_id', 'layer_id'])
-        hits = pd.concat([vlid_groups.get_group(vlids[i]).assign(geometry_id=i)
-                         for i in range(n_det_layers)])
+        vlid_groups = hits.groupby(["volume_id", "layer_id"])
+        hits = pd.concat([
+            vlid_groups.get_group(vlids[i]).assign(geometry_id=i) for i in range(n_det_layers)
+        ])
 
         true_edges = make_true_edges(hits)
         cells = pd.read_csv(cell_fname)
         hits = add_cluster_shape(hits, cells, self.detector)
 
         hits = hits.assign(
-            R=np.sqrt(
-                (hits.x - hits.vx) ** 2
-                + (hits.y - hits.vy) ** 2
-                + (hits.z - hits.vz) ** 2
-            )
+            R=np.sqrt((hits.x - hits.vx) ** 2 + (hits.y - hits.vy) ** 2 + (hits.z - hits.vz) ** 2)
         )
         hits = hits.sort_values("R").reset_index(drop=True).reset_index(drop=False)
 
