@@ -1,4 +1,3 @@
-from typing import List
 import itertools
 
 import numpy as np
@@ -18,7 +17,7 @@ class TrackingData:
         self,
         particles: pd.DataFrame,
         measurements: pd.DataFrame,
-        detector_feature_names: List[str],
+        detector_feature_names: list[str],
         name: str = "TrackingData",
     ):
         self.particles = particles
@@ -39,7 +38,7 @@ class TrackingData:
         ]
         # check if input data contain all the required features
         # the vx, vy, vz are normally obtained from the particle ataframe
-        assert all([f in self.hits.columns for f in required_measurement_features]), (
+        assert all(f in self.hits.columns for f in required_measurement_features), (
             "The measurements dataframe does not contain all the required features."
             "Required features are:"
             ",".join(required_measurement_features)
@@ -59,13 +58,13 @@ class TrackingData:
             "charge",
             "pdg_id",
         ]
-        assert all([f in self.particles.columns for f in required_particle_columns]), (
+        assert all(f in self.particles.columns for f in required_particle_columns), (
             "The particles dataframe does not contain all the required columns."
             "Required columns are:"
             ",".join(required_particle_columns)
         )
 
-    def build_true_edges(self, detector_feature_names: List[str]):
+    def build_true_edges(self, detector_feature_names: list[str]):
         r"""Build the true edges from the input data."""
         if len(detector_feature_names) == 0:
             raise ValueError("The detector_feature_names should not be empty.")
@@ -73,9 +72,9 @@ class TrackingData:
         # Sort by increasing distance from production
         hits = self.hits.assign(
             R=np.sqrt(
-                (hits.x - hits.vx) ** 2
-                + (hits.y - hits.vy) ** 2
-                + (hits.z - hits.vz) ** 2
+                (self.hits.x - self.hits.vx) ** 2
+                + (self.hits.y - self.hits.vy) ** 2
+                + (self.hits.z - self.hits.vz) ** 2
             )
         )
         # remove noise hits
@@ -101,6 +100,4 @@ class TrackingData:
         return true_edges
 
     def __str__(self):
-        return "TrackingData with {} particles and {} measurements.".format(
-            len(self.particles), len(self.measurements)
-        )
+        return f"TrackingData with {len(self.particles)} particles and {len(self.measurements)} measurements."

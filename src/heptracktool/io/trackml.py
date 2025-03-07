@@ -26,9 +26,9 @@ __all__ = ["TrackMLReader", "select_barrel_hits", "remove_noise_hits"]
 # predefined layer info
 # in Tracking ML, layer is defined by (volumn id and layer id)
 # now I just use a unique layer id
-vlids = [(7, 2), (7, 4), (7, 6), (7, 8), (7, 10), (7,12), (7, 14),
+vlids = [(7, 2), (7, 4), (7, 6), (7, 8), (7, 10), (7, 12), (7, 14),
          (8, 2), (8, 4), (8, 6), (8, 8),
-         (9, 2), (9, 4), (9, 6), (9, 8), (9, 10), (9,12), (9, 14),
+         (9, 2), (9, 4), (9, 6), (9, 8), (9, 10), (9, 12), (9, 14),
          (12, 2), (12, 4), (12, 6), (12, 8), (12, 10), (12, 12),
          (13, 2), (13, 4), (13, 6), (13, 8),
          (14, 2), (14, 4), (14, 6), (14, 8), (14, 10), (14, 12),
@@ -36,6 +36,7 @@ vlids = [(7, 2), (7, 4), (7, 6), (7, 8), (7, 10), (7,12), (7, 14),
          (17, 2), (17, 4),
          (18, 2), (18, 4), (18, 6), (18, 8), (18, 10), (18, 12)]
 n_det_layers = len(vlids)
+
 
 def select_barrel_hits(hits):
     """Select barrel hits."""
@@ -83,8 +84,7 @@ class TrackMLReader(BaseTrackDataReader):
             int(re.search(pattern, os.path.basename(x)).group(1).strip())
             for x in all_evts])
 
-        print("total {} events in directory: {}".format(
-            self.nevts, self.inputdir))
+        print(f"total {self.nevts} events in directory: {self.inputdir}")
 
         detector_path = os.path.join(self.inputdir, "../detector.csv")
         origin_detector_info, self.detector = load_detector(detector_path)

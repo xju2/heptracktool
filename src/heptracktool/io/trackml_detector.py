@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
+
 #############################################
 #               DETECTOR UTILS              #
 #############################################
@@ -51,7 +52,7 @@ def determine_array_size(detector):
     return max_v, max_l, max_m
 
 
-class Detector_Rotations(object):
+class Detector_Rotations:
     def __init__(self, detector):
         self.detector = detector
         self.max_v, self.max_l, self.max_m = determine_array_size(detector)
@@ -84,7 +85,7 @@ class Detector_Rotations(object):
         return r
 
 
-class Detector_Thicknesses(object):
+class Detector_Thicknesses:
     def __init__(self, detector):
         self.detector = detector
         self.max_v, self.max_l, self.max_m = determine_array_size(detector)
@@ -105,7 +106,7 @@ class Detector_Thicknesses(object):
             self.all_t[v, l, m] = r.module_t
 
 
-class Detector_Pixel_Size(object):
+class Detector_Pixel_Size:
     def __init__(self, detector):
         print(detector.keys())
         self.detector = detector

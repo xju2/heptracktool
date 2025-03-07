@@ -20,7 +20,7 @@ class RecoTrkxReader:
 
     def __call__(self, evtid: int, *args: Any, **kwds: Any) -> Any:
         """Return reconstructed track candidates"""
-        tracks_fname = os.path.join(self.path, "{}.npz".format(evtid))
+        tracks_fname = os.path.join(self.path, f"{evtid}.npz")
         arrays = np.load(tracks_fname)
         predicts = arrays["predicts"]
         if predicts.shape[1] == 2:
@@ -52,7 +52,7 @@ class ACTSTrkxReader:
                 for x in all_files
             ]
         )
-        print("Total {} events in directory: {}".format(self.nevts, self.path))
+        print(f"Total {self.nevts} events in directory: {self.path}")
 
     def __call__(self, evtid: int, *args: Any, **kwds: Any) -> Any:
         """Return reconstructed track candidates"""

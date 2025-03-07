@@ -74,21 +74,21 @@ class AthenaRawDataReader(BaseTrackDataReader):
             raise ValueError("Please provide either evtid or event_number or nothing")
 
         evtid, run_number, event_number = event_info
-        return "_evt{}-{}_{}".format(evtid, run_number, event_number)
+        return f"_evt{evtid}-{run_number}_{event_number}"
 
     def get_filename(
         self, prefix, evtid, run_number, event_number, suffix="txt"
     ) -> str:
         """Get the input filename for the given event id or event number."""
         namepatch = self.getnamepatch(evtid, run_number, event_number)
-        return self.inputdir / "{}{}.{}".format(prefix, namepatch, suffix)
+        return self.inputdir / f"{prefix}{namepatch}.{suffix}"
 
     def get_outname(
         self, prefix, evtid, run_number, event_number, suffix="parquet", **kwargs
     ) -> str:
         """Get the filename for the given event id or event number."""
         namepatch = self.getnamepatch(evtid, run_number, event_number)
-        return self.outdir / "{}{}.{}".format(prefix, namepatch, suffix)
+        return self.outdir / f"{prefix}{namepatch}.{suffix}"
 
     def read_wrap(
         self,

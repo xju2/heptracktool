@@ -1,13 +1,13 @@
 from __future__ import annotations
-from typing import List, Optional, Union
+from typing import list, Union
 from pathlib import Path
 import pandas as pd
 from loguru import logger
 
 
 class BaseTrackDataReader:
-    """Base class for reading Tracking data. 
-    
+    """Base class for reading Tracking data.
+
     It reads and processes the data. The processed data is stored in the optional directory."""
 
     def __init__(
@@ -32,7 +32,7 @@ class BaseTrackDataReader:
         self.overwrite = overwrite
 
         # file systems and basic event information
-        self.all_evtids: List[int] = []
+        self.all_evtids: list[int] = []
         self.nevts = 0
 
         # following are essential dataframe
@@ -46,29 +46,29 @@ class BaseTrackDataReader:
         # following are optional dataframe
         # they are created from the dumping object from Athena
         # needed for truth studies
-        self.tracks_clusters: Optional[pd.DataFrame] = None
-        self.tracks: Optional[pd.DataFrame] = None
-        self.true_tracks: Optional[pd.DataFrame] = None
-        self.detailed_matching: Optional[pd.DataFrame] = None
-        self.tracks_matched_to_truth: Optional[pd.DataFrame] = None
+        self.tracks_clusters: pd.DataFrame | None = None
+        self.tracks: pd.DataFrame | None = None
+        self.true_tracks: pd.DataFrame | None = None
+        self.detailed_matching: pd.DataFrame | None = None
+        self.tracks_matched_to_truth: pd.DataFrame | None = None
 
     def read(self, evtid: int = 0) -> bool:
         """Read one event from the input directory.
-        
+
         Args:
             evtid: event id to read. Default is 0.
-            
+
         Returns:
             bool: True if read successfully, False otherwise.
         """
         raise NotImplementedError
-    
+
     def read_by_event_number(self, evt_number: int) -> bool:
         """Read one event from the input directory by event number.
-        
+
         Args:
             evt_number: event number to read.
-            
+
         Returns:
             bool: True if read successfully, False otherwise.
         """
@@ -84,4 +84,4 @@ class BaseTrackDataReader:
         return self.read(evtid)
 
     def __str__(self):
-        return "{} reads from {}.".format(self.name, self.inputdir)
+        return f"{self.name} reads from {self.inputdir}."

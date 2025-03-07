@@ -43,10 +43,10 @@ class AthenaDFReader(BaseTrackDataReader):
     def __init__(
         self,
         inputdir: str,
-        output_dir: str = None,
-        overwrite: bool = None,
+        output_dir: str | None = None,
+        overwrite: bool = False,
         name: str = "AthenaDFReader",
-        postfix="csv",
+        postfix: str = "csv",
         selections: bool = False,
         pt_cut: float = 0.3,
     ):
@@ -54,7 +54,7 @@ class AthenaDFReader(BaseTrackDataReader):
 
         self.postfix = postfix
 
-        all_evts = self.inputdir.glob("event*-truth.{}".format(postfix))
+        all_evts = self.inputdir.glob(f"event*-truth.{postfix}")
         self.nevts = len(all_evts)
         pattern = f"event([0-9]*)-truth.{postfix}"
         self.all_evtids = sorted(
@@ -63,37 +63,38 @@ class AthenaDFReader(BaseTrackDataReader):
                 for x in all_evts
             ]
         )
-        print("total {} events in directory: {}".format(self.nevts, self.csv_dir))
+        print(f"total {self.nevts} events in directory: {self.csv_dir}")
 
         self.selections = selections
         if self.selections:
             print("Only select PIXEL Barrel.")
-        self.ptcut = pt_cut if pt_cut >= 0 else 0
+        self.ptcut = max(pt_cut, 0)
         print(f"True particles with pT > {self.ptcut} GeV")
 
-    def read_file(self, prefix):
-        postfix = self.postfix
-        filename = f"{prefix}.{postfix}"
+    def read_file(self, prefix: str) -> pd.DataFrame:
+        filename = f"{prefix}.{self.postfix}"
 
-        if postfix == "csv":
-            df = pd.read_csv(filename)
-        elif postfix == "pkl":
-            df = pd.read_pickle(filename)
+        if self.postfix == "csv":
+            return pd.read_csv(filename)
+        elif self.postfix == "pkl":
+            return pd.read_pickle(filename)
         else:
-            raise ValueError(f"Unknown postfix: {postfix}")
-        return df
+            raise ValueError(f"Unknown postfix: {self.postfix}")
 
-    def read(self, evtid=None) -> bool:
+    def read(self, evtid: int) -> bool:
         """Read one event from the input directory
 
-        Return:
-            MeasurementData
+        Args:
+            evtid (int, optional): Event ID to read. Defaults to None.
+
+        Returns:
+            bool: True if reading is successful, False otherwise.
         """
         if (evtid is None or evtid < 1) and self.nevts > 0:
             evtid = self.all_evtids[0]
 
-        prefix = os.path.join(self.csv_dir, "event{:09d}".format(evtid))
-        truth_fname = prefix + "-truth"
+        prefix = os.path.join(self.csv_dir, f"event{evtid:09d}")
+        truth_fname = f"{prefix}-truth"
         truth = self.read_file(truth_fname)
 
         r = np.sqrt(truth.x**2 + truth.y**2)
@@ -106,22 +107,14 @@ class AthenaDFReader(BaseTrackDataReader):
             barrel = truth.barrel_endcap == 0
             truth = truth[barrel & pixel_only]
 
-        # <TODO: why are there duplicated hit-id?, >
         truth.drop_duplicates(
             subset=["hit_id", "x", "y", "z"], inplace=True, keep="first"
         )
         truth = truth.reset_index(drop=True).reset_index(drop=False)
 
-        particle_fname = prefix + "-particles"
+        particle_fname = f"{prefix}-particles"
         particles = self.read_file(particle_fname)
         particles["pt"] = particles.pt.values / 1000.0  # to be GeV
-
-        # for particles, apply minimum selections
-        # particles = particles[ (particles.status == 1) &\
-        #     (particles.barcode < 200000) &\
-        #     (particles.radius < 260) & (particles.charge.abs() > 0)]
-        # particles = particles[ (particles.status == 1) &\
-        # (particles.barcode < 200000) & (particles.charge.abs() > 0)]
 
         truth = truth.merge(particles, on="particle_id", how="left")
 
@@ -142,5 +135,5 @@ class AthenaDFReader(BaseTrackDataReader):
         self.true_edges = edges
         return True
 
-    def __call__(self, evtid, *args: Any, **kwds: Any) -> Any:
+    def __call__(self, evtid: int, *args: Any, **kwds: Any) -> Any:
         return self.read(evtid)

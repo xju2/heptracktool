@@ -103,11 +103,6 @@ def add_cluster_shape(hits, cells, detector):
 
     l_u, l_v, l_w = get_all_local_angles(hits, cells, detector)
     g_matrix_all = get_all_rotated(hits, detector, l_u, l_v, l_w)
-    hit_ids, cell_counts, cell_vals = (
-        hits["hit_id"].to_numpy(),
-        hits["cell_count"].to_numpy(),
-        hits["cell_val"].to_numpy(),
-    )
 
     l_u, l_v = l_u.to_numpy(), l_v.to_numpy()
 

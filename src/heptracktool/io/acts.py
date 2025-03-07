@@ -8,6 +8,7 @@ acts/event000001000-spacepoints.csv
 acts/event000001000-particles_final.csv
 acts/event000001000-cells.csv
 """
+from __future__ import annotations
 import os
 import re
 import glob
@@ -23,7 +24,7 @@ class ActsReader(BaseTrackDataReader):
     def __init__(
         self,
         inputdir: str,
-        output_dir: str = None,
+        output_dir: str | None = None,
         overwrite: bool = True,
         name: str = "ActsReader",
         spname: str = "spacepoint",
@@ -32,9 +33,9 @@ class ActsReader(BaseTrackDataReader):
         self.spname = spname
 
         # count how many events in the directory
-        all_evts = glob.glob(os.path.join(self.basedir, "event*-{}.csv".format(spname)))
+        all_evts = glob.glob(os.path.join(self.basedir, f"event*-{spname}.csv"))
 
-        pattern = "event([0-9]*)-{}.csv".format(spname)
+        pattern = f"event([0-9]*)-{spname}.csv"
         self.all_evtids = sorted(
             [
                 int(re.search(pattern, os.path.basename(x)).group(1).strip())
@@ -42,9 +43,9 @@ class ActsReader(BaseTrackDataReader):
             ]
         )
         self.nevts = len(self.all_evtids)
-        print("total {} events in directory: {}".format(self.nevts, self.basedir))
+        print(f"total {self.nevts} events in directory: {self.basedir}")
 
-    def read(self, evtid: int = None) -> bool:
+    def read(self, evtid: int) -> bool:
         """Read one event from the input directory.
 
         Return:
@@ -53,12 +54,12 @@ class ActsReader(BaseTrackDataReader):
         if (evtid is None or evtid < 1) and self.nevts > 0:
             evtid = self.all_evtids[0]
 
-        prefix = os.path.join(self.basedir, "event{:09d}".format(evtid))
-        hit_fname = "{}-hits.csv".format(prefix)
-        measurements_fname = "{}-measurements.csv".format(prefix)
-        measurements2hits_fname = "{}-measurement-simhit-map.csv".format(prefix)
-        sp_fname = "{}-{}.csv".format(prefix, self.spname)
-        p_name = "{}-particles_final.csv".format(prefix)
+        prefix = os.path.join(self.basedir, f"event{evtid:09d}")
+        hit_fname = f"{prefix}-hits.csv"
+        measurements_fname = f"{prefix}-measurements.csv"
+        measurements2hits_fname = f"{prefix}-measurement-simhit-map.csv"
+        sp_fname = f"{prefix}-{self.spname}.csv"
+        p_name = f"{prefix}-particles_final.csv"
 
         # read hit files
         hits = pd.read_csv(hit_fname)
@@ -80,7 +81,7 @@ class ActsReader(BaseTrackDataReader):
         particles = particles.assign(pt=pt, radius=radius, eta=eta)
 
         # read cluster information
-        cell_fname = "{}-cells.csv".format(prefix)
+        cell_fname = f"{prefix}-cells.csv"
         cells = pd.read_csv(cell_fname)
 
         # calculate cluster shape information
