@@ -143,6 +143,7 @@ lint.select = [
     "PT024",
     "PT025",
     "PT026",
+    "PTH",  # flake8-use-pathlib
     "PYI",
     "Q003",  # avoidable escaped quote
     "Q004",  # unnecessary escaped quote
