@@ -28,16 +28,16 @@ class EdgePerformance:
 
         # per-edge efficiency
         num_true_reco_edges = truth_labels.sum().item()
-        per_edge_efficiency = 100.0 * num_true_reco_edges / num_true_edges
+        per_edge_efficiency = num_true_reco_edges / num_true_edges
         logger.info(
-            f"True Reco Edges {num_true_reco_edges:,}, True Edges {num_true_edges:,}, Per-edge efficiency: {per_edge_efficiency:.3f}%"
+            f"True Reco Edges {num_true_reco_edges:,}, True Edges {num_true_edges:,}, Per-edge efficiency: {per_edge_efficiency:.3%}"
         )
 
         # per-edge purity
         num_true_edges, num_reco_edges = true_edges.shape[1], edge_index.shape[1]
-        per_edge_purity = 100.0 * num_true_edges / num_reco_edges
+        per_edge_purity = num_true_edges / num_reco_edges
         logger.info(
-            f"True Edges {num_true_edges:,}, Reco Edges {num_reco_edges:,}, Per-edge purity: {per_edge_purity:.3f}%"
+            f"True Edges {num_true_edges:,}, Reco Edges {num_reco_edges:,}, Per-edge purity: {per_edge_purity:.3%}"
         )
 
         # look at only the edges from nodes of interests.
@@ -50,15 +50,15 @@ class EdgePerformance:
         num_masked_true_edges = masked_true_edges.shape[1]
         masked_truth_labels = graph_intersection(edge_index, masked_true_edges)
         num_masked_true_reco_edges = masked_truth_labels.sum().item()
-        per_masked_edge_efficiency = 100.0 * num_masked_true_reco_edges / num_masked_true_edges
-        frac_masked_true_reco_edges = 100.0 * num_masked_true_edges / num_true_edges
+        per_masked_edge_efficiency = num_masked_true_reco_edges / num_masked_true_edges
+        frac_masked_true_reco_edges = num_masked_true_edges / num_true_edges
         logger.info(
-            f"Only {frac_masked_true_reco_edges:.3f}% of true edges are of interests (signal)"
+            f"Only {frac_masked_true_reco_edges:.2%} of true edges are of interests (signal)"
         )
         logger.info(
             f"True Reco Signal Edges {num_masked_true_reco_edges:,}, "
-            "True Signal Edges {num_masked_true_edges:,}, "
-            "Per-edge signal efficiency: {per_masked_edge_efficiency:.3f}%"
+            f"True Signal Edges {num_masked_true_edges:,}, "
+            f"Per-edge signal efficiency: {per_masked_edge_efficiency:.3%}"
         )
 
         return (

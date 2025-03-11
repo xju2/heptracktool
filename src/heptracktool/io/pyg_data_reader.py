@@ -52,7 +52,7 @@ class TrackGraphDataReader(BaseTrackDataReader):
         if not Path(filename).exists():
             raise FileNotFoundError(f"File {filename} does not exist.")
 
-        data = torch.load(filename, map_location=torch.device("cpu"))
+        data = torch.load(filename, map_location=torch.device("cpu"), weights_only=False)
         self.data = data
 
         return data
@@ -63,6 +63,10 @@ class TrackGraphDataReader(BaseTrackDataReader):
         """Get the node features from the data object"""
         if self.data is None:
             raise RuntimeError("Please read the data first!")
+
+        # check if `hit_x` in the data. If not, remove "hit_" from all node_features.
+        if "hit_x" not in self.data:
+            node_features = [x.replace("hit_", "") for x in node_features if x.startswith("hit_")]
 
         node_features = torch.stack([self.data[x] for x in node_features], dim=-1).float()
         if node_scales is not None:
@@ -79,7 +83,7 @@ class TrackGraphDataReader(BaseTrackDataReader):
         data = self.data
         # edge-level selections
         mask = (
-            (data.pt >= 900)
+            (data.pt >= 1000)
             & (data.nhits >= 3)
             & (data.primary == 1)
             & (data.pdgId != 11)

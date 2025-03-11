@@ -1,4 +1,4 @@
-from heptracktool.models import MetricLearning
+from heptracktool.models.metric_learning import MetricLearning
 from heptracktool.tools.utils_graph import build_edges
 from heptracktool.io.pyg_data_reader import TrackGraphDataReader
 from heptracktool.tools.edge_perf import EdgePerformance
@@ -16,8 +16,8 @@ class SparcifyStudy:
         self,
         metric_learning_ckpt_filename,
         pyg_reader: TrackGraphDataReader,
-        kval: int,
-        rval: float,
+        kval: int | None = None,
+        rval: float | None = None,
         device: str | None = None,
     ):
         self.model = MetricLearning.load_from_checkpoint(metric_learning_ckpt_filename)
@@ -25,10 +25,10 @@ class SparcifyStudy:
         self.edge_perf = EdgePerformance(self.reader)
 
         self.node_features = self.model.hparams["node_features"]
-        self.node_scales = self.model.hpamras["node_scales"]
+        self.node_scales = self.model.hparams["node_scales"]
 
-        self.kval = kval
-        self.rval = rval
+        self.kval = self.model.hparams["knn_val"] if kval is None else kval
+        self.rval = self.model.hparams["r_train"] if rval is None else rval
         self.device = (
             device if device is not None else "cuda" if torch.cuda.is_available() else "cpu"
         )
@@ -54,14 +54,21 @@ class SparcifyStudy:
         )
 
         num_nodes = in_features.size(0)
-        embedding = self.model(in_features)
+        with torch.no_grad():
+            embedding = self.model(in_features)
         knn_backend = "FRNN" if self.device == "cuda" else "torch"
-        edge_list = build_edges(embedding, embedding, None, kval, rval, backend=knn_backend)
+        edge_index = build_edges(embedding, None, rval, kval, backend=knn_backend)
+
+        # sort the edges and remove duplicated.
+        edge_index[:, edge_index[0] > edge_index[1]] = edge_index[
+            :, edge_index[0] > edge_index[1]
+        ].flip(0)
+        edge_index = torch.unique(edge_index, dim=-1)
 
         # Treat the embedding distances between the edges as weights
-        weights = torch.norm(embedding[edge_list[0]] - embedding[edge_list[1]], dim=1)
+        weights = torch.norm(embedding[edge_index[0]] - embedding[edge_index[1]], dim=1)
         sparse_matrix = sp.coo_matrix(
-            (weights.cpu().numpy(), edge_list), shape=(num_nodes, num_nodes)
+            (weights.cpu().numpy(), edge_index.cpu().numpy()), shape=(num_nodes, num_nodes)
         )
         return sparse_matrix
 
@@ -77,6 +84,8 @@ class SparcifyStudy:
 
         array = np.array([sp_coo_matrix.row, sp_coo_matrix.col], dtype=int)
         edge_index = torch.from_numpy(array)
+        # make the graph undirected.
+        edge_index = torch.cat([edge_index, edge_index.flip(0)], dim=-1)
         print(f"Number of edges: {edge_index.size(1):,}")
         return self.edge_perf.eval(edge_index)
 

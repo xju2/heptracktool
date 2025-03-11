@@ -8,5 +8,7 @@ This repository goes with the [ACORN](https://gitlab.cern.ch/gnn4itkteam/acorn/-
 ## Installation
 
 ```bash
-pip install .
+pip install heptracktool
+pip install --no-cache-dir --force-reinstall torch_cluster  -f https://data.pyg.org/whl/torch-2.5.1+cu124.html
 ```
+Then you need to install the `FRNN`.
