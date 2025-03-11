@@ -1,5 +1,5 @@
-"""This moudle reads the PyG data object created by the CommomFramework.
-"""
+"""This moudle reads the PyG data object created by the CommomFramework."""
+
 from typing import Union
 import re
 from pathlib import Path
@@ -34,9 +34,7 @@ class TrackGraphDataReader(BaseTrackDataReader):
             return evtid
 
         self.all_evtids = [find_evt_info(x) for x in self.pyg_files]
-        print(
-            f"{self.name}: Total {self.nevts} events in directory: {self.inputdir}"
-        )
+        print(f"{self.name}: Total {self.nevts} events in directory: {self.inputdir}")
 
         self.data = None
 
@@ -44,6 +42,16 @@ class TrackGraphDataReader(BaseTrackDataReader):
         """Read one event from the input directory."""
         filename = self.pyg_files[evtid]
         print(f"Reading file: {filename}")
+        return self.read_by_filename(filename)
+
+    def read_by_filename(self, filename: str) -> bool:
+        """Read one event from the input directory by filename."""
+        if not Path(filename).exists():
+            filename = self.inputdir / filename
+
+        if not Path(filename).exists():
+            raise FileNotFoundError(f"File {filename} does not exist.")
+
         data = torch.load(filename, map_location=torch.device("cpu"))
         self.data = data
 
@@ -56,9 +64,7 @@ class TrackGraphDataReader(BaseTrackDataReader):
         if self.data is None:
             raise RuntimeError("Please read the data first!")
 
-        node_features = torch.stack(
-            [self.data[x] for x in node_features], dim=-1
-        ).float()
+        node_features = torch.stack([self.data[x] for x in node_features], dim=-1).float()
         if node_scales is not None:
             node_scales = torch.Tensor(node_scales)
             node_features = node_features / node_scales

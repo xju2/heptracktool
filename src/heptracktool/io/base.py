@@ -81,5 +81,16 @@ class BaseTrackDataReader:
             return False
         return self.read(evtid)
 
+    def read_by_filename(self, filename: str) -> bool:
+        """Read one event from the input directory by filename.
+
+        Args:
+            filename: filename to read.
+
+        Returns:
+            bool: True if read successfully, False otherwise.
+        """
+        raise NotImplementedError
+
     def __str__(self):
         return f"{self.name} reads from {self.inputdir}."

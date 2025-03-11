@@ -74,7 +74,7 @@ class TorchModelInference:
             "testset",
         ], "data_type must be trainset, valset, or testset"
 
-        with open(config_fname) as f:
+        with Path(config_fname).open() as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
 
         self.config = config
@@ -134,7 +134,7 @@ class ExaTrkxInference:
         self.name = name
         self.device = device
 
-        with open(config_fname) as f:
+        with Path(config_fname).open() as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
 
         self.config = config
