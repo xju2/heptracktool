@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from heptracktool.utils.utils_plot import add_mean_std, create_figure
-from heptracktool.io import BaseTrackDataReader
+from heptracktool.io.base import BaseTrackDataReader
 
 
 class TrackAnalyzer:
