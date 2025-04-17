@@ -7,4 +7,3 @@ This package provides tools for track reconstruction using graphs and ML.
 - [IO](api/heptracktool/io.md)
 - [Models](api/heptracktool/models.md)
 - [Tools](api/heptracktool/tools.md)
-- [Development](api/heptracktool/dev.md)

@@ -49,3 +49,4 @@ nav:
           - tools: api/heptracktool/tools.md
           - utils: api/heptracktool/utils.md
           - viewer: api/heptracktool/viewer.md
+  - Development: dev.md
