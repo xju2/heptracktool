@@ -1,0 +1,51 @@
+site_name: HepTrackTool
+repo_url: https://github.com/xju2/heptracktool
+site_description: A python package for track reconstruction workflow in HEP
+site_author: Xiangyang Ju
+theme:
+  name: material
+  palette:
+    scheme: default
+    toggle:
+      icon: material/toggle-switch
+      name: Switch to dark mode
+    accent: indigo
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.sections
+    - navigation.expand
+    - navigation.tracking
+    - navigation.instant
+    - navigation.indexes
+    - navigation.search.highlight
+    - navigation.search.suggest
+    - navigation.search.share
+    - content.code.copy
+
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            show_source: true
+            show_root_toc_entry: false
+            show_if_no_docstring: true
+            show_signature: true
+            show_root_heading: false
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Notebooks:
+      - Graph Sparcification: notebooks/graph-sparcification.md
+  - API Reference:
+      - heptracktool:
+          - io: api/heptracktool/io.md
+          - models: api/heptracktool/models.md
+          - tools: api/heptracktool/tools.md
+          - utils: api/heptracktool/utils.md
+          - viewer: api/heptracktool/viewer.md
