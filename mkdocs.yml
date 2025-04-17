@@ -34,7 +34,7 @@ plugins:
             show_source: true
             show_root_toc_entry: false
             show_if_no_docstring: true
-            show_signature: true
+            show_signature: false
             show_root_heading: false
 
 nav:
