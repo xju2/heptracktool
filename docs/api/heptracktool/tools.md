@@ -21,7 +21,9 @@
             - eval
             - eval_edge_scores
 
-### ::: heptracktool.tools.model_inference.ExaTrkxInference
+## ::: heptracktool.tools.model_inference.ExaTrkxInference
     options:
         members:
             - __call__
+
+::: heptracktool.tools.sparcification_study.SparcifyStudy
