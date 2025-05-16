@@ -135,7 +135,11 @@ def build_edges(
     return (edge_list, dists, idxs, ind) if (return_indices and backend == "FRNN") else edge_list
 
 
-def graph_intersection(edge_index: torch.Tensor, true_edges: torch.Tensor) -> torch.Tensor:
+def graph_intersection(
+    edge_index: torch.Tensor,
+    true_edges: torch.Tensor,
+    return_truth_to_pred: bool = False,
+) -> torch.Tensor:
     """
     Use sparse representation to compare the predicted graph
     and the truth graph so as to label the edges in the predicted graph
@@ -152,24 +156,23 @@ def graph_intersection(edge_index: torch.Tensor, true_edges: torch.Tensor) -> to
     unique_edges, inverse = torch.unique(
         torch.cat([edge_index, true_edges], dim=1),
         dim=1,
-        sorted=False,
         return_inverse=True,
-        return_counts=False,
     )
 
-    predict_in_unique_edges = inverse[:num_reco_edges]
+    # among the unique edges, which exit in the predicted graph
+    inverse_pred_map = torch.ones_like(unique_edges[1]).to(device) * -1
+    inverse_pred_map[inverse[:num_reco_edges]] = torch.arange(num_reco_edges, device=device)
 
-    # among the unique edges, which are from the predicted graph
-    unique_edge_from_reco = torch.ones_like(unique_edges[1]).to(device) * -1
-    unique_edge_from_reco[inverse[:num_reco_edges]] = torch.arange(num_reco_edges, device=device)
-
-    # among the unique edges, which are from the truth graph
-    unique_edge_from_truth = torch.ones_like(unique_edges[1]).to(device) * -1
-    unique_edge_from_truth[inverse[num_reco_edges:]] = torch.arange(
-        true_edges.shape[1], device=device
-    )
+    # among the unique edges, which exit in the truth graph
+    inverse_truth_map = torch.ones_like(unique_edges[1]).to(device) * -1
+    inverse_truth_map[inverse[num_reco_edges:]] = torch.arange(true_edges.shape[1], device=device)
 
     # which edges in the predicted graph are also in the truth graph
-    edge_index_truth = unique_edge_from_truth[predict_in_unique_edges] >= 0
+    edge_index_truth = inverse_truth_map[inverse][:num_reco_edges] >= 0
 
-    return edge_index_truth
+    return_tensors = [edge_index_truth]
+    if return_truth_to_pred:
+        truth_to_pred = inverse_pred_map[inverse][num_reco_edges:]
+        return_tensors.append(truth_to_pred)
+
+    return return_tensors if len(return_tensors) > 1 else return_tensors[0]
