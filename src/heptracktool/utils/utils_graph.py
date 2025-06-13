@@ -168,11 +168,11 @@ def graph_intersection(
     inverse_truth_map[inverse[num_reco_edges:]] = torch.arange(true_edges.shape[1], device=device)
 
     # which edges in the predicted graph are also in the truth graph
-    edge_index_truth = inverse_truth_map[inverse][:num_reco_edges] >= 0
+    edge_index_y = inverse_truth_map[inverse[:num_reco_edges]] >= 0
 
-    return_tensors = [edge_index_truth]
+    return_tensors = [edge_index_y]
     if return_truth_to_pred:
-        truth_to_pred = inverse_pred_map[inverse][num_reco_edges:]
+        truth_to_pred = inverse_pred_map[inverse[num_reco_edges:]]
         return_tensors.append(truth_to_pred)
 
     return return_tensors if len(return_tensors) > 1 else return_tensors[0]
