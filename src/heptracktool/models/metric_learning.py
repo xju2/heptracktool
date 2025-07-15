@@ -1,4 +1,3 @@
-# 3rd party imports
 from __future__ import annotations
 
 import torch
@@ -6,7 +5,6 @@ import torch.nn.functional as F
 from pytorch_lightning import LightningModule
 from torch_geometric.data import Data
 
-# Local imports
 from heptracktool.utils.utils_graph import build_edges
 from heptracktool.utils.utils_graph import graph_intersection
 
@@ -14,17 +12,24 @@ from heptracktool.utils.utils_graph import graph_intersection
 class MetricLearning(LightningModule):
     def __init__(
         self,
-        model: torch.nn.Module,
-        optimizer: torch.optim.Optimizer,
-        scheduler: torch.optim.lr_scheduler._LRScheduler | None = None,
+        model,
+        optimizer,
+        scheduler,
         r_max: float = 0.1,
         k_max: int = 1000,
+        scheduler_interval: str = "epoch",
+        scheduler_frequency: int = 1,
+        scheduler_monitor: str = "val/reco_error",
     ):
         super().__init__()
         self.save_hyperparameters(
-            ignore=["model"],
+            logger=False,
+            ignore=["model", "optimizer", "scheduler"],
         )
         self.network = model
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+
         self.delta_r = 0.01
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -32,22 +37,18 @@ class MetricLearning(LightningModule):
         return F.normalize(x_out)
 
     def configure_optimizers(self):
-        opt = self.hparams.optimizer(params=self.parameters())
-        if self.hparams.scheduler is not None:
-            sch = self.hparams.scheduler(optimizer=opt)
-            return (
-                {
-                    "optimizer": opt,
-                    "lr_scheduler": {
-                        "scheduler": sch,
-                        "monitor": "val_loss",
-                        "interval": "step",
-                        "frequency": self.trainer.val_check_interval,
-                        "strict": True,
-                        "name": "LRScheduler",
-                    },
+        opt = self.optimizer(params=self.parameters())
+        if self.scheduler is not None:
+            sch = self.scheduler(optimizer=opt)
+            return {
+                "optimizer": opt,
+                "lr_scheduler": {
+                    "scheduler": sch,
+                    "interval": self.hparams.scheduler_interval,
+                    "frequency": self.hparams.scheduler_frequency,
+                    "monitor": self.hparams.scheduler_monitor,
                 },
-            )
+            }
         return {"optimizer": opt, "frequency": 1}
 
     def on_train_batch_start(self, batch: Data, batch_idx: int) -> None:
@@ -110,7 +111,6 @@ class MetricLearning(LightningModule):
 
     def _order_edge_direction(self, R: torch.Tensor, edge_list: torch.Tensor):
         # make sure edge (a, b) where a is always closer to beam spot than b
-
         mask = (R[edge_list[0]] > R[edge_list[1]]) | (
             R[edge_list[0]] == R[edge_list[1]] & (edge_list[0] > edge_list[1])
         )
@@ -135,7 +135,7 @@ class MetricLearning(LightningModule):
         return knn_edges
 
     def _get_edge_weights(self, batch: Data) -> torch.Tensor:
-        """Get the weights for the edges in the batch."""
+        """assign weigths to true and false edges."""
         assert hasattr(batch, "edge_index")
         assert hasattr(batch, "y")
 

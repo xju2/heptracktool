@@ -53,8 +53,6 @@ class TrackingData:
             "vx",
             "vy",
             "vz",
-            "radius",
-            "status",
             "charge",
             "pdg_id",
         ]
