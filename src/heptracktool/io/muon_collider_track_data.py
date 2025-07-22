@@ -35,14 +35,14 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
         # sort the event ids and file names
         arg_sorted = sorted(range(len(self.all_evtids)), key=lambda k: self.all_evtids[k])
         self.all_evtids = [self.all_evtids[i] for i in arg_sorted]
-        self.all_files = [all_evts[i] for i in arg_sorted]
+        self.all_files = {self.all_evtids[i]: all_evts[i] for i in arg_sorted}
 
         logger.info(f"Total {self.nevts} events in directory: {self.inputdir}")
 
     def read(self, evtid: int = 0):
         if (evtid is None or evtid < 1) and self.nevts > 0:
             evtid = self.all_evtids[0]
-            filename = self.all_files[0]
+            filename = self.all_files[evtid]
             print(f"read event {evtid}, using file {filename}")
         elif evtid not in self.all_evtids:
             raise ValueError(f"Event id {evtid} not found in the input directory.")
@@ -57,6 +57,11 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
                 return (None, None)
 
             event_info = tree.arrays(list(translator.keys()), library="np")  # type: ignore
+
+            # check if the event size is zero.
+            if len(event_info["Hit_x"]) < 1 or event_info["Hit_x"][0].size < 1:
+                logger.warning(f"Event {evtid} has no hits in file: {filename}")
+                return (None, None)
 
             hit_arrays = [event_info[x][0] for x in hit_branch_names]
             hits = pd.DataFrame(dict(zip(hit_col_names, hit_arrays)))
@@ -74,33 +79,50 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
 
         return hits, particles
 
+    def event_filename(self, evt_id: int):
+        """Generate the output filename for a given event ID."""
+        return self.outdir / f"event_{evt_id:09d}.pt"
+
     def save_one_event(self, evt_id: int, spacepoints: pd.DataFrame, particles: pd.DataFrame):
         """Save one event to the output directory as a pyG file."""
         if spacepoints is None or particles is None:
             logger.error(f"No data to save for {evt_id}.")
 
-        data_dict = [(name, spacepoints[name].to_numpy()) for name in hit_col_names + ["particle_id"]]
+        data_dict = [
+            (name, spacepoints[name].to_numpy()) for name in hit_col_names + ["particle_id"]
+        ]
         data_dict += [(name, particles[name].to_numpy()) for name in particle_col_names]
         data_dict += [("event_id", evt_id)]
-        output_file = self.outdir / f"event_{evt_id:09d}.pt"
-        torch.save(dict(data_dict), output_file)
+        torch.save(dict(data_dict), self.event_filename(evt_id))
 
     def read_and_save_one_evt(self, evt_id):
+        if self.event_filename(evt_id).exists() and not self.overwrite:
+            return
+
         hits, particles = self.read(evt_id)
         if hits is not None and particles is not None:
             self.save_one_event(evt_id, hits, particles)
 
     def save_all_events(self, num_workers: int = 1):
         """Save all events to the output directory."""
-        logger.info(f"Saving all {len(self.all_evtids)} events to {self.outdir} with {num_workers} workers.")
+        logger.info(
+            f"Saving all {len(self.all_evtids)} events to {self.outdir} with {num_workers} workers."
+        )
         from tqdm import tqdm
+
         description = "Saving events"
         if num_workers < 2:
             for evt_id in tqdm(self.all_evtids, desc=description):
                 self.read_and_save_one_evt(evt_id)
         else:
             from tqdm.contrib.concurrent import process_map
-            process_map(self.read_and_save_one_evt, self.all_evtids, desc=description, max_workers=num_workers)
+
+            process_map(
+                self.read_and_save_one_evt,
+                self.all_evtids,
+                desc=description,
+                max_workers=num_workers,
+            )
 
         logger.info("Done saving all events.")
 
@@ -109,10 +131,33 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Muon Collider Track Data Reader")
-    parser.add_argument("-i", "--input_dir", type=str, required=True, help="Input directory containing the data files.")
-    parser.add_argument("-o", "--output_dir", type=str, required=True, help="Output directory to save the processed data.")
-    parser.add_argument("-r", "--overwrite", action="store_true", help="Overwrite existing files in the output directory.")
-    parser.add_argument("-w", "--num_workers", type=int, default=1, help="Number of workers for parallel processing.")
+    parser.add_argument(
+        "-i",
+        "--input_dir",
+        type=str,
+        required=True,
+        help="Input directory containing the data files.",
+    )
+    parser.add_argument(
+        "-o",
+        "--output_dir",
+        type=str,
+        required=True,
+        help="Output directory to save the processed data.",
+    )
+    parser.add_argument(
+        "-r",
+        "--overwrite",
+        action="store_true",
+        help="Overwrite existing files in the output directory.",
+    )
+    parser.add_argument(
+        "-w",
+        "--num_workers",
+        type=int,
+        default=1,
+        help="Number of workers for parallel processing.",
+    )
     args = parser.parse_args()
 
     reader = MuonColliderTrackDataReader(args.input_dir, args.output_dir, args.overwrite)
