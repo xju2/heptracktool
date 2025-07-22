@@ -24,10 +24,14 @@ dependencies = [
   "loguru",
   "matplotlib",
   "griffe (>=1.7.2,<2.0.0)",
+  "joblib (>=1.5.1,<2.0.0)",
 ]
 
 [project.urls]
 Homepage = "https://github.com/xju2/heptracktool"
+
+[project.scripts]
+process_muon_data = "heptracktool.io.muon_collider_track_data:main"
 
 [tool.poetry]
 exclude = ["notebooks"]

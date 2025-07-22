@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Union
+from typing import Union, Any
 from pathlib import Path
 import pandas as pd
 from loguru import logger
@@ -50,7 +50,7 @@ class BaseTrackDataReader:
         self.detailed_matching: pd.DataFrame | None = None
         self.tracks_matched_to_truth: pd.DataFrame | None = None
 
-    def read(self, evtid: int = 0) -> bool:
+    def read(self, evtid: int = 0) -> Any:
         """Read one event from the input directory.
 
         Args:
@@ -93,4 +93,4 @@ class BaseTrackDataReader:
         raise NotImplementedError
 
     def __str__(self):
-        return f"{self.name} reads from {self.inputdir}."
+        return f"{self.name} reads from {self.inputdir} and produce data to {self.outdir}."
