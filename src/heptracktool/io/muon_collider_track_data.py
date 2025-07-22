@@ -39,7 +39,7 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
         if (evtid is None or evtid < 1) and self.nevts > 0:
             evtid = self.all_evtids[0]
             filename = self.all_files[0]
-            print(f"read event {evtid}")
+            print(f"read event {evtid}, using file {filename}")
         elif evtid not in self.all_evtids:
             raise ValueError(f"Event id {evtid} not found in the input directory.")
         else:
@@ -49,11 +49,19 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
             tree = file_handle["HitTree"]
             event_info = tree.arrays(list(translator.keys()), library="np")  # type: ignore
 
-            hit_arrays = [event_info[x] for x in hit_branch_names]
+            hit_arrays = [event_info[x][0] for x in hit_branch_names]
             hits = pd.DataFrame(dict(zip(hit_col_names, hit_arrays)))
 
-            particle_arrays = [event_info[x] for x in particle_branch_names]
+            particle_arrays = [event_info[x][0] for x in particle_branch_names]
             particles = pd.DataFrame(dict(zip(particle_col_names, particle_arrays)))
+
+            # ! the default particle ID is 0, which is not a good practice.
+            # ! as zeros are often reserved for noise hits. Let's use 123.
+            # TODO: use the particle ID from ACTS.
+            muon_particle_id = 123
+            particles["particle_id"] = muon_particle_id
+            hits["particle_id"] = 0
+            hits.loc[hits["is_from_secondary"] == 0.0, "particle_id"] = muon_particle_id
 
             self.spacepoints = hits
             self.particles = particles
