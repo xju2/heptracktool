@@ -1,8 +1,20 @@
 from __future__ import annotations
-from typing import Union
+
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Union
+
+import numpy as np
 import pandas as pd
 from loguru import logger
+
+
+@dataclass
+class TrackerData:
+    hits: pd.DataFrame
+    particles: pd.DataFrame
+    truth: pd.DataFrame
+    true_edges: np.ndarray
 
 
 class BaseTrackDataReader:
@@ -39,7 +51,7 @@ class BaseTrackDataReader:
         self.spacepoints: pd.DataFrame = None
         # truth is the same as spacepoints, but contains truth information
         self.truth: pd.DataFrame = None
-        self.true_edges: pd.DataFrame = None
+        self.true_edges: np.ndarray = None
 
         # following are optional dataframe
         # they are created from the dumping object from Athena
@@ -50,7 +62,7 @@ class BaseTrackDataReader:
         self.detailed_matching: pd.DataFrame | None = None
         self.tracks_matched_to_truth: pd.DataFrame | None = None
 
-    def read(self, evtid: int = 0) -> bool:
+    def read(self, evtid: int = 0) -> TrackerData:
         """Read one event from the input directory.
 
         Args:
