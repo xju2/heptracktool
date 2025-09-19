@@ -61,9 +61,11 @@ def dump_data(data):
 
 
 def make_true_edges(hits):
-    hits = hits.assign(
-        R=np.sqrt((hits.x - hits.vx) ** 2 + (hits.y - hits.vy) ** 2 + (hits.z - hits.vz) ** 2)
-    )
+    if "R" not in hits.columns:
+        hits = hits.assign(
+            R=np.sqrt((hits.x - hits.vx) ** 2 + (hits.y - hits.vy) ** 2 + (hits.z - hits.vz) ** 2)
+        )
+
     hits = hits.sort_values("R").reset_index(drop=True).reset_index(drop=False)
     hit_list = (
         hits.groupby(["particle_id", "geometry_id"], sort=False)["index"]
