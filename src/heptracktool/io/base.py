@@ -1,8 +1,20 @@
 from __future__ import annotations
-from typing import Union, Any
+
+from dataclasses import dataclass
+from typing import Union
 from pathlib import Path
+
+import numpy as np
 import pandas as pd
 from loguru import logger
+
+
+@dataclass
+class TrackerData:
+    hits: pd.DataFrame
+    particles: pd.DataFrame
+    truth: pd.DataFrame
+    true_edges: np.ndarray
 
 
 class BaseTrackDataReader:
@@ -39,7 +51,7 @@ class BaseTrackDataReader:
         self.spacepoints: pd.DataFrame = None
         # truth is the same as spacepoints, but contains truth information
         self.truth: pd.DataFrame = None
-        self.true_edges: pd.DataFrame = None
+        self.true_edges: np.ndarray = None
 
         # following are optional dataframe
         # they are created from the dumping object from Athena
@@ -50,7 +62,7 @@ class BaseTrackDataReader:
         self.detailed_matching: pd.DataFrame | None = None
         self.tracks_matched_to_truth: pd.DataFrame | None = None
 
-    def read(self, evtid: int = 0) -> Any:
+    def read(self, evtid: int = 0) -> TrackerData:
         """Read one event from the input directory.
 
         Args:
@@ -61,7 +73,7 @@ class BaseTrackDataReader:
         """
         raise NotImplementedError
 
-    def read_by_event_number(self, evt_number: int) -> bool:
+    def read_by_event_number(self, evt_number: int) -> TrackerData | None:
         """Read one event from the input directory by event number.
 
         Args:
@@ -78,7 +90,7 @@ class BaseTrackDataReader:
                 evtid = -1
         if evtid < 0:
             logger.error(f"Event number {evt_number} not found in the event list.")
-            return False
+            return None
         return self.read(evtid)
 
     def read_by_filename(self, filename: str) -> bool:
