@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Union
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -73,7 +73,7 @@ class BaseTrackDataReader:
         """
         raise NotImplementedError
 
-    def read_by_event_number(self, evt_number: int) -> bool:
+    def read_by_event_number(self, evt_number: int) -> TrackerData | None:
         """Read one event from the input directory by event number.
 
         Args:
@@ -90,7 +90,7 @@ class BaseTrackDataReader:
                 evtid = -1
         if evtid < 0:
             logger.error(f"Event number {evt_number} not found in the event list.")
-            return False
+            return None
         return self.read(evtid)
 
     def read_by_filename(self, filename: str) -> bool:
@@ -105,4 +105,4 @@ class BaseTrackDataReader:
         raise NotImplementedError
 
     def __str__(self):
-        return f"{self.name} reads from {self.inputdir}."
+        return f"{self.name} reads from {self.inputdir} and produce data to {self.outdir}."
