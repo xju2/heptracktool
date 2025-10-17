@@ -172,7 +172,9 @@ class TrackMLReader(BaseTrackDataReader):
         hits = pd.read_csv(hit_fname)
         r = np.sqrt(hits.x**2 + hits.y**2)
         phi = np.arctan2(hits.y, hits.x)
-        hits = hits.assign(r=r, phi=phi)
+        theta = np.arctan2(r, hits.z)
+        eta = -np.log(np.tan(theta / 2))
+        hits = hits.assign(r=r, phi=phi, theta=theta, eta=eta)
 
         # read truth info about hits and particles
         truth = pd.read_csv(truth_fname)
