@@ -1,14 +1,17 @@
-import uproot.exceptions
-from heptracktool.io.base import BaseTrackDataReader
-import uproot
-import pandas as pd
-from loguru import logger
-
-import torch
-
 import re
 
+import numpy as np
+import pandas as pd
+import torch
+import uproot
+import uproot.exceptions
+from loguru import logger
+
+from heptracktool.io.base import BaseTrackDataReader
 from heptracktool.io.utils_mcollider_data import (
+    cell_branch_names,
+    cell_col_names,
+    extract_cell_features,
     hit_branch_names,
     hit_col_names,
     particle_branch_names,
@@ -24,7 +27,6 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
         super().__init__(input_dir, output_dir, overwrite, name="MuonColliderTrackDataReader")
 
         all_evts = list(self.inputdir.glob("*.root"))
-        self.nevts = len(all_evts)
 
         file_name_pattern = "Hits_TTree_([0-9]+)_([0-9]+)-([0-9]+).root"
         self.all_evtids = [
@@ -35,19 +37,17 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
         # sort the event ids and file names
         arg_sorted = sorted(range(len(self.all_evtids)), key=lambda k: self.all_evtids[k])
         self.all_evtids = [self.all_evtids[i] for i in arg_sorted]
-        self.all_files = {self.all_evtids[i]: all_evts[i] for i in arg_sorted}
+        self.all_files = [all_evts[i] for i in arg_sorted]
+        self.nevts = len(self.all_evtids)
+
+        self.hit_pid_name = "hit_particle_id"
 
         logger.info(f"Total {self.nevts} events in directory: {self.inputdir}")
 
-    def read(self, evtid: int = 0):
-        if (evtid is None or evtid < 1) and self.nevts > 0:
-            evtid = self.all_evtids[0]
-            filename = self.all_files[evtid]
-            print(f"read event {evtid}, using file {filename}")
-        elif evtid not in self.all_evtids:
-            raise ValueError(f"Event id {evtid} not found in the input directory.")
-        else:
-            filename = self.all_files[evtid]
+    def read(self, evtid: int = 0) -> tuple[pd.DataFrame | None, pd.DataFrame | None]:
+        assert isinstance(evtid, int) and evtid >= 0 and evtid < self.nevts, "Invalid event id."
+        filename = self.all_files[evtid]
+        logger.debug("Reading event index {} from file {}", evtid, filename)
 
         with uproot.open(filename) as file_handle:  # type: ignore
             try:
@@ -59,7 +59,8 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
             event_info = tree.arrays(list(translator.keys()), library="np")  # type: ignore
 
             # check if the event size is zero.
-            if len(event_info["Hit_x"]) < 1 or event_info["Hit_x"][0].size < 1:
+            hit_x = hit_branch_names[0]
+            if len(event_info[hit_x]) < 1 or event_info[hit_x][0].size < 1:
                 logger.warning(f"Event {evtid} has no hits in file: {filename}")
                 return (None, None)
 
@@ -74,8 +75,18 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
             # TODO: use the particle ID from ACTS.
             muon_particle_id = 123
             particles["part_id"] = muon_particle_id
-            hits["particle_id"] = 0
-            hits.loc[hits["is_from_secondary"] == 0.0, "particle_id"] = muon_particle_id
+            hits[self.hit_pid_name] = 0
+            hits.loc[hits["hit_is_from_secondary"] == 0.0, self.hit_pid_name] = muon_particle_id
+
+            # process cell information. Not yet ready...
+            # these will be additional features associated with each space point (hit)
+            cell_arrays = [event_info[x][0] for x in cell_branch_names]
+            cells = pd.DataFrame(dict(zip(cell_col_names, cell_arrays)))
+            num_cells = hits["hit_charge_count"].to_numpy()
+            cell_hit_id = np.repeat(np.arange(len(num_cells)), num_cells)
+            cells["hit_id"] = cell_hit_id
+            cell_features = extract_cell_features(cells)
+            hits = pd.concat([hits, cell_features], axis=1)
 
         return hits, particles
 
@@ -89,7 +100,7 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
             logger.error(f"No data to save for {evt_id}.")
 
         data_dict = [
-            (name, spacepoints[name].to_numpy()) for name in hit_col_names + ["particle_id"]
+            (name, spacepoints[name].to_numpy()) for name in hit_col_names + [self.hit_pid_name]
         ]
         data_dict += [(name, particles[name].to_numpy()) for name in particle_col_names]
         data_dict += [("event_id", evt_id)]
