@@ -133,6 +133,7 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
                 all_evtids,
                 desc=description,
                 max_workers=num_workers,
+                chunksize=1,
             )
 
         logger.info("Done saving all events.")
