@@ -6,6 +6,8 @@ import torch
 import uproot
 import uproot.exceptions
 from loguru import logger
+from tqdm import tqdm
+from tqdm.contrib.concurrent import process_map
 
 from heptracktool.io.base import BaseTrackDataReader
 from heptracktool.io.utils_mcollider_data import (
@@ -30,7 +32,7 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
 
         file_name_pattern = "Hits_TTree_([0-9]+)_([0-9]+)-([0-9]+).root"
         self.all_evtids = [
-            int(re.search(file_name_pattern, x.name).group(1).strip())
+            int(re.search(file_name_pattern, x.name).group(1).strip())  # type: ignore
             for x in all_evts  # type: ignore
         ]
 
@@ -45,7 +47,8 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
         logger.info(f"Total {self.nevts} events in directory: {self.inputdir}")
 
     def read(self, evtid: int = 0) -> tuple[pd.DataFrame | None, pd.DataFrame | None]:
-        assert isinstance(evtid, int) and evtid >= 0 and evtid < self.nevts, "Invalid event id."
+        assert isinstance(evtid, int), f"Event ID must be an integer. {type(evtid)} given."
+        assert 0 <= evtid < self.nevts, f"Event ID {evtid} out of range [0, {self.nevts})"
         filename = self.all_files[evtid]
         logger.debug("Reading event index {} from file {}", evtid, filename)
 
@@ -103,8 +106,9 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
             (name, spacepoints[name].to_numpy()) for name in hit_col_names + [self.hit_pid_name]
         ]
         data_dict += [(name, particles[name].to_numpy()) for name in particle_col_names]
-        data_dict += [("event_id", evt_id)]
-        torch.save(dict(data_dict), self.event_filename(evt_id))
+        evt_num = self.all_evtids[evt_id]
+        data_dict += [("event_id", evt_num)]
+        torch.save(dict(data_dict), self.event_filename(evt_num))
 
     def read_and_save_one_evt(self, evt_id):
         if self.event_filename(evt_id).exists() and not self.overwrite:
@@ -114,23 +118,19 @@ class MuonColliderTrackDataReader(BaseTrackDataReader):
         if hits is not None and particles is not None:
             self.save_one_event(evt_id, hits, particles)
 
-    def save_all_events(self, num_workers: int = 1):
+    def save_all_events(self, num_workers: int = 1, max_evts: int = -1):
         """Save all events to the output directory."""
-        logger.info(
-            f"Saving all {len(self.all_evtids)} events to {self.outdir} with {num_workers} workers."
-        )
-        from tqdm import tqdm
-
+        max_evts = self.nevts if max_evts < 0 else min(max_evts, self.nevts)
+        all_evtids = list(range(max_evts))
+        logger.info(f"Saving all {max_evts} events to {self.outdir} with {num_workers} workers.")
         description = "Saving events"
         if num_workers < 2:
-            for evt_id in tqdm(self.all_evtids, desc=description):
+            for evt_id in tqdm(all_evtids, desc=description):
                 self.read_and_save_one_evt(evt_id)
         else:
-            from tqdm.contrib.concurrent import process_map
-
             process_map(
                 self.read_and_save_one_evt,
-                self.all_evtids,
+                all_evtids,
                 desc=description,
                 max_workers=num_workers,
             )
