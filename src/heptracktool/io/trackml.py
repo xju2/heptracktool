@@ -9,14 +9,13 @@ trackml/event000001000-particles.csv
 trackml/event000001000-truth.csv
 """
 
-import os
-import glob
 import re
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from heptracktool.io.base import BaseTrackDataReader
+from heptracktool.io.base import BaseTrackDataReader, TrackerData
 from heptracktool.io.utils_feature_store import make_true_edges
 from heptracktool.io.trackml_cell_info import add_cluster_shape
 from heptracktool.io.trackml_detector import load_detector
@@ -27,15 +26,56 @@ __all__ = ["TrackMLReader", "select_barrel_hits", "remove_noise_hits"]
 # predefined layer info
 # in Tracking ML, layer is defined by (volumn id and layer id)
 # now I just use a unique layer id
-vlids = [(7, 2), (7, 4), (7, 6), (7, 8), (7, 10), (7, 12), (7, 14),
-         (8, 2), (8, 4), (8, 6), (8, 8),
-         (9, 2), (9, 4), (9, 6), (9, 8), (9, 10), (9, 12), (9, 14),
-         (12, 2), (12, 4), (12, 6), (12, 8), (12, 10), (12, 12),
-         (13, 2), (13, 4), (13, 6), (13, 8),
-         (14, 2), (14, 4), (14, 6), (14, 8), (14, 10), (14, 12),
-         (16, 2), (16, 4), (16, 6), (16, 8), (16, 10), (16, 12),
-         (17, 2), (17, 4),
-         (18, 2), (18, 4), (18, 6), (18, 8), (18, 10), (18, 12)]
+vlids = [
+    (7, 2),
+    (7, 4),
+    (7, 6),
+    (7, 8),
+    (7, 10),
+    (7, 12),
+    (7, 14),
+    (8, 2),
+    (8, 4),
+    (8, 6),
+    (8, 8),
+    (9, 2),
+    (9, 4),
+    (9, 6),
+    (9, 8),
+    (9, 10),
+    (9, 12),
+    (9, 14),
+    (12, 2),
+    (12, 4),
+    (12, 6),
+    (12, 8),
+    (12, 10),
+    (12, 12),
+    (13, 2),
+    (13, 4),
+    (13, 6),
+    (13, 8),
+    (14, 2),
+    (14, 4),
+    (14, 6),
+    (14, 8),
+    (14, 10),
+    (14, 12),
+    (16, 2),
+    (16, 4),
+    (16, 6),
+    (16, 8),
+    (16, 10),
+    (16, 12),
+    (17, 2),
+    (17, 4),
+    (18, 2),
+    (18, 4),
+    (18, 6),
+    (18, 8),
+    (18, 10),
+    (18, 12),
+]
 n_det_layers = len(vlids)
 
 
@@ -70,24 +110,21 @@ def remove_noise_hits(hits):
 
 
 class TrackMLReader(BaseTrackDataReader):
-    def __init__(self, basedir, name="TrackMLReader", is_codalab_data: bool = True) -> None:
-        super().__init__(basedir, name)
-        self.suffix = ".csv.gz" if is_codalab_data else "csv"
+    def __init__(self, inputdir, name="TrackMLReader") -> None:
+        super().__init__(inputdir, name)
+        # self.suffix = ".csv.gz" if is_codalab_data else "csv"
+        self.suffix = ".csv"
         # count how many events in the directory
-        all_evts = glob.glob(os.path.join(self.basedir, "event*-hits.csv"))
-
+        all_evts = list(self.inputdir.glob(f"event*-hits{self.suffix}"))
         self.nevts = len(all_evts)
-        pattern = "event([0-9]*)-hits.csv"
-        if is_codalab_data:
-            pattern = "event([0-9]*)-hits" + self.suffix
-
-        self.all_evtids = sorted([
-            int(re.search(pattern, os.path.basename(x)).group(1).strip()) for x in all_evts
-        ])
-
         print(f"total {self.nevts} events in directory: {self.inputdir}")
 
-        detector_path = os.path.join(self.inputdir, "../detector.csv")
+        pattern = f"event([0-9]*)-hits{self.suffix}"
+        self.all_evtids = sorted([
+            int(re.search(pattern, Path(x).name).group(1).strip()) for x in all_evts
+        ])
+
+        detector_path = self.inputdir / "../detector.csv"
         origin_detector_info, self.detector = load_detector(detector_path)
         self.build_detector_vocabulary(origin_detector_info)
 
@@ -117,14 +154,15 @@ class TrackMLReader(BaseTrackDataReader):
         # Inverting the umid_dict
         self.umid_dict_inv = {v: k for k, v in umid_dict.items()}
 
-    def read(self, evtid: int) -> bool:
+    def read(self, evtid: int) -> TrackerData:
         """Read one event from the input directory"""
 
         if (evtid is None or evtid < 1) and self.nevts > 0:
             evtid = self.all_evtids[0]
-            print(f"read event {evtid}")
+        else:
+            evtid = self.all_evtids[evtid]
 
-        prefix = os.path.join(self.inputdir, f"event{evtid:09d}")
+        prefix = self.inputdir / f"event{evtid:09d}"
         hit_fname = f"{prefix}-hits{self.suffix}"
         cell_fname = f"{prefix}-cells{self.suffix}"
         particle_fname = f"{prefix}-particles{self.suffix}"
@@ -134,7 +172,9 @@ class TrackMLReader(BaseTrackDataReader):
         hits = pd.read_csv(hit_fname)
         r = np.sqrt(hits.x**2 + hits.y**2)
         phi = np.arctan2(hits.y, hits.x)
-        hits = hits.assign(r=r, phi=phi)
+        theta = np.arctan2(r, hits.z)
+        eta = -np.log(np.tan(theta / 2))
+        hits = hits.assign(r=r, phi=phi, theta=theta, eta=eta)
 
         # read truth info about hits and particles
         truth = pd.read_csv(truth_fname)
@@ -181,4 +221,4 @@ class TrackMLReader(BaseTrackDataReader):
 
         self.spacepoints = hits
         self.true_edges = true_edges
-        return True
+        return TrackerData(hits, particles, truth, true_edges)
