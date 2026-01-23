@@ -4,6 +4,7 @@
 
 PT_CUTS=(200 400 500 700 900 1000)
 rdo=/cvmfs/atlas-nightlies.cern.ch/repo/data/data-art/PhaseIIUpgrade/RDO/ATLAS-P2-RUN4-03-00-00/mc21_14TeV.601229.PhPy8EG_A14_ttbar_hdamp258p75_SingleLep.recon.RDO.e8481_s4149_r14700/RDO.33629020._000047.pool.root.1
+MAX_EVENTS=10
 
 echo "Input RDO file: ${rdo}"
 
@@ -32,7 +33,7 @@ for PT_CUT in "${PT_CUTS[@]}"; do
             --steering doRAWtoALL
             --preInclude InDetConfig.ConfigurationHelpers.OnlyTrackingPreInclude
             --preExec="flags.Tracking.ITkMainPass.minPT=[${PT_CUT}]; flags.Tracking.ITkMainPass.minPTSeed=${PT_CUT}"
-            --maxEvents 2
+            --maxEvents $MAX_EVENTS
             --perfmon fullmonmt
         )
         time "${cmd[@]}"
