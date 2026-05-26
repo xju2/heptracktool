@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Union
+from typing import Any, Union
 from pathlib import Path
 
 import numpy as np
@@ -73,7 +73,7 @@ class BaseTrackDataReader:
         """
         raise NotImplementedError
 
-    def read_by_event_number(self, evt_number: int) -> TrackerData | None:
+    def read_by_event_number(self, evt_number: int) -> Any:
         """Read one event from the input directory by event number.
 
         Args:
