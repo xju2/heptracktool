@@ -21,8 +21,8 @@ pip install --no-cache-dir --force-reinstall torch_cluster  -f https://data.pyg.
 ## Preprocessing TrackML data
 
 ```bash
-heptracktool convert -i "/global/cfs/cdirs/m3443/data/trackml-codalab/train_100" -o "/global/cfs/cdirs/m3443/usr/xju/data/trackml/train_100_parquet" -w 32
+heptracktool preprocess -t TrackML -i "/global/cfs/cdirs/m3443/data/trackml-codalab/train_100" -o "/global/cfs/cdirs/m3443/usr/xju/data/trackml/train_100_parquet" -w 32
+heptracktool preprocess -t TrackML -i "/global/cfs/cdirs/m3443/data/trackml-codalab/train_all" -o "/global/cfs/cdirs/m3443/usr/xju/data/trackml/train_all_parquet" -w 32
 
-
-heptracktool convert -i "/global/cfs/cdirs/m3443/data/trackml-codalab/train_all" -o "/global/cfs/cdirs/m3443/usr/xju/data/trackml/train_all_parquet" -w 32
+heptracktool preprocess -t MuonCollider -i /global/cfs/cdirs/m3443/data/TrackingInMuonCollider/singleMuonV2/New -o /global/cfs/cdirs/m3443/data/TrackingInMuonCollider/singleMuonV2_feature_store -m -1 -w 32
 ```
