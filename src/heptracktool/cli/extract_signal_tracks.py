@@ -4,14 +4,12 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from loguru import logger
-from threading import Lock
 from tqdm import tqdm
 
 logger.remove()
 logger.add(lambda msg: print(msg, end=""), level="INFO")
 
 _TASK_TIMEOUT = 120
-_BATCH_SIZE = 500
 
 
 def _extract_signal_hits(reader, evt_idx, evt_id):
@@ -37,9 +35,7 @@ def _extract_signal_hits(reader, evt_idx, evt_id):
               help="Number of worker threads")
 @click.option("-t", "--timeout", "task_timeout", type=int, default=_TASK_TIMEOUT,
               help="Per-event timeout in seconds (default: 120)")
-@click.option("-b", "--batch-size", "batch_size", type=int, default=_BATCH_SIZE,
-              help="Events submitted per batch; controls peak memory (default: 500)")
-def extract_signal_tracks(input_dir, output_path, max_evts, num_workers, task_timeout, batch_size):
+def extract_signal_tracks(input_dir, output_path, max_evts, num_workers, task_timeout):
     """Extract signal hits from all events and save to a single parquet file."""
     from heptracktool.io.muon_collider_track_data import MuonColliderTrackDataReader
 
@@ -50,62 +46,40 @@ def extract_signal_tracks(input_dir, output_path, max_evts, num_workers, task_ti
     logger.info(f"Extracting signal hits from {max_evts} events with {num_workers} threads.")
 
     skipped = []
-    total_hits = 0
-    writer = None
-    write_lock = Lock()
-
-    def flush(batch):
-        nonlocal total_hits, writer
-        if not batch:
-            return
-        n = sum(len(df) for df in batch)
-        table = pa.Table.from_pandas(pd.concat(batch, ignore_index=True))
-        batch.clear()
-        with write_lock:
-            if writer is None:
-                writer = pq.ParquetWriter(output_path, table.schema)
-            writer.write_table(table)
-        total_hits += n
+    all_hits = []
 
     if num_workers < 2:
-        batch = []
         for evt_idx, evt_id in tqdm(tasks, desc="Extracting signal hits"):
             result = _extract_signal_hits(reader, evt_idx, evt_id)
             if result is not None:
-                batch.append(result)
-            if len(batch) >= batch_size:
-                flush(batch)
-        flush(batch)
+                all_hits.append(result)
     else:
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
-            with tqdm(total=max_evts, desc="Extracting signal hits") as pbar:
-                for start in range(0, len(tasks), batch_size):
-                    chunk = tasks[start: start + batch_size]
-                    futures = {
-                        executor.submit(_extract_signal_hits, reader, idx, eid): (idx, eid)
-                        for idx, eid in chunk
-                    }
-                    batch = []
-                    for future in as_completed(futures):
-                        evt_idx, evt_id = futures[future]
-                        try:
-                            result = future.result(timeout=task_timeout)
-                            if result is not None:
-                                batch.append(result)
-                        except Exception as exc:
-                            logger.warning(f"Event idx={evt_idx} id={evt_id} skipped: {exc}")
-                            skipped.append(evt_idx)
-                        pbar.update(1)
-                    flush(batch)
+            futures = {
+                executor.submit(_extract_signal_hits, reader, idx, eid): (idx, eid)
+                for idx, eid in tasks
+            }
+            for future in tqdm(as_completed(futures), total=len(futures), desc="Extracting signal hits"):
+                evt_idx, evt_id = futures[future]
+                try:
+                    result = future.result(timeout=task_timeout)
+                    if result is not None:
+                        all_hits.append(result)
+                except Exception as exc:
+                    logger.warning(f"Event idx={evt_idx} id={evt_id} skipped: {exc}")
+                    skipped.append(evt_idx)
 
-    if writer is not None:
-        writer.close()
-    else:
+    if not all_hits:
         logger.warning("No signal hits found.")
         return
 
     if skipped:
         logger.warning(f"Skipped {len(skipped)} events: {skipped}")
 
-    logger.info(f"Total signal hits: {total_hits}. Saved to {output_path}")
+    logger.info("Concatenating and writing to parquet...")
+    table = pa.Table.from_pandas(pd.concat(all_hits, ignore_index=True))
+    del all_hits
+    pq.write_table(table, output_path)
+
+    logger.info(f"Total signal hits: {len(table)}. Saved to {output_path}")
     logger.info("Done.")
