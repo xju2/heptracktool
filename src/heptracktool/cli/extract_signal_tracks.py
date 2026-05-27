@@ -14,9 +14,11 @@ def _init_worker(input_dir):
     global _global_reader
     from heptracktool.io.muon_collider_track_data import MuonColliderTrackDataReader
 
+    logger.disable("heptracktool")
     _global_reader = MuonColliderTrackDataReader(
         input_dir=input_dir, output_dir=None, overwrite=False
     )
+    logger.enable("heptracktool")
 
 
 def _extract_signal_hits(args):

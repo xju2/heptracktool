@@ -41,10 +41,10 @@ Collect signal hits (non-secondary) across events into a single Parquet file for
 
 ```bash
 heptracktool extract-signal-tracks \
-  -i /global/cfs/cdirs/m3443/data/TrackingInMuonCollider/singleMuonV2 \
+  -i /global/cfs/cdirs/m3443/data/TrackingInMuonCollider/singleMuonV2/New \
   -o /global/cfs/cdirs/m3443/data/TrackingInMuonCollider/singleMuonV2_signal_hits_5000evts.parquet \
   -m 5000 \
-  -w 32
+  -w 64
 ```
 
 The output Parquet file contains all hit features (`event_id`, `hit_id`, `hit_toa`, `hit_charge`, coordinates, cell features, etc.) for hits where `hit_is_from_secondary == 0`.
