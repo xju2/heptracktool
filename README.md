@@ -22,7 +22,11 @@ uv run pip install --no-cache-dir --force-reinstall torch_cluster -f https://dat
 ```
 
 
-## Preprocessing TrackML data
+## CLI Commands
+
+### Preprocessing data
+
+Convert raw data to Parquet/PyG format for downstream training:
 
 ```bash
 heptracktool preprocess -t TrackML -i "/global/cfs/cdirs/m3443/data/trackml-codalab/train_100" -o "/global/cfs/cdirs/m3443/usr/xju/data/trackml/train_100_parquet" -w 32
@@ -30,3 +34,17 @@ heptracktool preprocess -t TrackML -i "/global/cfs/cdirs/m3443/data/trackml-coda
 
 heptracktool preprocess -t MuonCollider -i /global/cfs/cdirs/m3443/data/TrackingInMuonCollider/singleMuonV2/New -o /global/cfs/cdirs/m3443/data/TrackingInMuonCollider/singleMuonV2_feature_store -m -1 -w 32
 ```
+
+### Extracting signal hits
+
+Collect signal hits (non-secondary) across events into a single Parquet file for statistical analysis:
+
+```bash
+heptracktool extract-signal-tracks \
+  -i /global/cfs/cdirs/m3443/data/TrackingInMuonCollider/singleMuonV2 \
+  -o /global/cfs/cdirs/m3443/data/TrackingInMuonCollider/singleMuonV2_signal_hits_5000evts.parquet \
+  -m 5000 \
+  -w 32
+```
+
+The output Parquet file contains all hit features (`event_id`, `hit_id`, `hit_toa`, `hit_charge`, coordinates, cell features, etc.) for hits where `hit_is_from_secondary == 0`.
