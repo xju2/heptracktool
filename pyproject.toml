@@ -27,6 +27,7 @@ dependencies = [
   "fastparquet>=2024.11.0,<2025.0.0",
   "click>=8.2.1,<9.0.0",
   "joblib>=1.5.1,<2.0.0",
+  "pyarrow>=24.0.0",
 ]
 
 [project.urls]
