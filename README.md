@@ -6,15 +6,19 @@ This repository goes with the [ACORN](https://gitlab.cern.ch/gnn4itkteam/acorn/-
 
 
 ## Installation
-First install the `poetry` tool by following the <script src="https://gist.github.com/xju2/b4fd9d7db62a7a5345b190aae75d231e.js"></script> instructions.
-
-Then you can install the `heptracktool` package by
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if you don't have it:
 ```bash
-poetry install --with dev,docs
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
-Then you need to install the `FRNN` and `torch-cluster` packages.
+
+Then install the `heptracktool` package:
 ```bash
-pip install --no-cache-dir --force-reinstall torch_cluster  -f https://data.pyg.org/whl/torch-2.5.1+cu124.html
+uv sync --group dev --group docs
+```
+
+To install additional PyG packages such as `torch-cluster`:
+```bash
+uv run pip install --no-cache-dir --force-reinstall torch_cluster -f https://data.pyg.org/whl/torch-2.6.0+cu124.html
 ```
 
 

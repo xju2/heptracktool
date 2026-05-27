@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "heptracktool"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "Tools for high energy physics particle tracking"
 readme = "README.md"
 requires-python = ">=3.11"
